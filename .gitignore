@@ -1,0 +1,8 @@
+# 忽略所有檔案
+*
+
+# 但不忽略 .gitignore 自身
+!.gitignore
+
+# 以及 app.py
+!app.py
