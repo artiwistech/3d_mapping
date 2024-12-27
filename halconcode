@@ -1,0 +1,103 @@
+* 读取图片
+read_image (Image00, 'C:/halcon12/01-KINIK - AOI/00-Software/20240206-sensofar/Photo/LJ3_01')
+get_image_size (Image00, Width, Height)
+
+* 显示窗口
+dev_open_window (0, 0, Width*0.7, Height*0.7, 'black', WindowHandle)
+dev_display (Image00)
+
+* Top方向的第一条直线
+dev_set_color ('yellow')
+XPosition_1:=[761.984, 678.334, 498.813, 372.279, 294.039]
+YPosition_1:=[87.9788, 103.554, 134.917, 159.628, 176]
+
+* 显示坐标点
+for j:=0 to |XPosition_1|-1 by 1
+    disp_cross(WindowHandle, YPosition_1[j], XPosition_1[j], 20, 10)
+endfor
+
+* 生成点的轮廓
+gen_contour_polygon_xld(Contour_1, YPosition_1, XPosition_1)
+
+* 拟合直线
+fit_line_contour_xld(Contour_1, 'tukey', -1, 0, 5, 2, RowBegin_1, ColumnBegin_1, RowEnd_1, ColumnEnd_1, Nr_1, Nc_1, Dist_1)
+
+* 计算延长后的起点和终点
+distance_pp(RowBegin_1, ColumnBegin_1, RowEnd_1, ColumnEnd_1, Length_1)
+Extend_1 := Length_1 * 1  
+NewRowBegin_1 := RowBegin_1 - Nr_1 / Length_1 * Extend_1
+NewColBegin_1 := ColumnBegin_1 - Nc_1 / Length_1 * Extend_1
+NewRowEnd_1 := RowEnd_1 + Nr_1 / Length_1 * Extend_1
+NewColEnd_1 := ColumnEnd_1 + Nc_1 / Length_1 * Extend_1
+
+* 显示延长后的回归线
+dev_set_color('red')
+disp_line(WindowHandle, NewRowBegin_1, NewColBegin_1, NewRowEnd_1, NewColEnd_1)
+
+* Right方向的第二条直线
+dev_set_color ('yellow')
+XPosition_2:=[178.691, 202.375, 241.452, 260.607, 278.468]
+YPosition_2:=[320, 448, 656, 752, 832]
+
+* 显示坐标点
+for j:=0 to |XPosition_2|-1 by 1
+    disp_cross(WindowHandle, YPosition_2[j], XPosition_2[j], 20, 10)
+endfor
+
+* 生成点的轮廓
+gen_contour_polygon_xld(Contour_2, YPosition_2, XPosition_2)
+
+* 拟合直线
+fit_line_contour_xld(Contour_2, 'tukey', -1, 0, 5, 2, RowBegin_2, ColumnBegin_2, RowEnd_2, ColumnEnd_2, Nr_2, Nc_2, Dist_2)
+
+* 计算延长后的起点和终点
+distance_pp(RowBegin_2, ColumnBegin_2, RowEnd_2, ColumnEnd_2, Length_2)
+Extend_2 := Length_2 * 1  
+NewRowBegin_2 := RowBegin_2 - Nr_2 / Length_2 * Extend_2
+NewColBegin_2 := ColumnBegin_2 - Nc_2 / Length_2 * Extend_2
+NewRowEnd_2 := RowEnd_2 + Nr_2 / Length_2 * Extend_2
+NewColEnd_2 := ColumnEnd_2 + Nc_2 / Length_2 * Extend_2
+
+* 显示延长后的回归线
+dev_set_color('red')
+disp_line(WindowHandle, NewRowBegin_2, NewColBegin_2, NewRowEnd_2, NewColEnd_2)
+
+* 计算交点
+intersection_lines(NewRowBegin_1, NewColBegin_1, NewRowEnd_1, NewColEnd_1, NewRowBegin_2, NewColBegin_2, NewRowEnd_2, NewColEnd_2, RowIntersection_1, ColumnIntersection_1, IsParallel_1)
+
+if (IsParallel_1 = 0)
+    * 显示交点
+    gen_cross_contour_xld(Cross_1, RowIntersection_1, ColumnIntersection_1, 50, 0.785398)
+    dev_set_color('green')
+    disp_xld(Cross_1, WindowHandle)
+else
+    write_string(WindowHandle, 'Lines are parallel, no intersection found.')
+endif
+
+* 再次进行拟合的交点计算（假设另外两条线的交点）
+intersection_lines(NewRowBegin_5, NewColBegin_5, NewRowEnd_5, NewColEnd_5, NewRowBegin_6, NewColBegin_6, NewRowEnd_6, NewColEnd_6, RowIntersection_5, ColumnIntersection_5, IsParallel_5)
+
+if (IsParallel_5 = 0)
+    * 显示交点
+    gen_cross_contour_xld(Cross_5, RowIntersection_5, ColumnIntersection_5, 50, 0.785398)
+    dev_set_color('green')
+    disp_xld(Cross_5, WindowHandle)
+else
+    write_string(WindowHandle, 'Lines are parallel, no intersection found.')
+endif
+
+* 如果两条线的交点都存在，进行拟合直线
+if (IsParallel_1 = 0 and IsParallel_5 = 0)
+    * 创建包含两个交点的轮廓
+    gen_contour_polygon_xld(Contour, [RowIntersection_1, RowIntersection_5], [ColumnIntersection_1, ColumnIntersection_5])
+
+    * 拟合直线
+    fit_line_contour_xld(Contour, 'tukey', -1, 0, 5, 2, RowBegin, ColumnBegin, RowEnd, ColumnEnd, Nr, Nc, Dist)
+
+    * 显示拟合的直线
+    set_color(WindowHandle, 'green')
+    disp_line(WindowHandle, RowBegin, ColumnBegin, RowEnd, ColumnEnd)
+else
+    * 如果有任何一组线是平行的，则输出没有交点
+    write_string(WindowHandle, 'At least one pair of lines is parallel, no line fitted.')
+endif
